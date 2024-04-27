@@ -22,9 +22,9 @@ class float3(var x: Float, var y: Float, var z: Float) {
         y /= v
         z /= v
     }
-    operator fun float3.plus(b: float3): float3 {return float3(x + b.x, y + b.y, z + b.z)}
+    operator fun plus(b: float3): float3 {return float3(x + b.x, y + b.y, z + b.z)}
     operator fun minus(b: float3): float3 {return float3(x - b.x, y - b.y, z - b.z)}
-    operator fun float3.times(b: float3): float3 {return float3(x * b.x, y * b.y, z * b.z)}
+    operator fun times(b: float3): float3 {return float3(x * b.x, y * b.y, z * b.z)}
     operator fun times(b: Float): float3 {return float3(x * b, y * b, z * b)}
     operator fun Float.times(b: float3): float3 {return b * this}
     operator fun float3.div(b: Float): float3 {return (1 / b) * this}

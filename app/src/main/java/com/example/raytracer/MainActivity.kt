@@ -1,15 +1,15 @@
 package com.example.raytracer
 
+import Camera
+import Sphere
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.ColorFilter
-import android.graphics.ColorSpace
 import android.graphics.Paint
 import android.graphics.PixelFormat
 import android.graphics.drawable.Drawable
 import android.os.Bundle
-import android.widget.ImageView
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -19,14 +19,11 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.ImageBitmapConfig
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.graphics.createBitmap
 import com.example.raytracer.ui.theme.RayTracerTheme
-import java.nio.Buffer
-import java.nio.IntBuffer
+import float3
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -75,13 +72,40 @@ class MyDrawable : Drawable() {
 @Composable
 fun PixelColorTest(con: Context)
 {
-//    val imview = ImageView(con)
-//    val myDrawing = MyDrawable()
-//    imview.setImageDrawable(myDrawing)
-    val cols: IntArray = IntArray(256*256) {1 * it}
-    var bitmap = createBitmap(width=256, height=256, config=Bitmap.Config.RGB_565)
+    val SCRWIDTH = 256
+    val SCRHEIGHT = 256
 
-    bitmap.setPixels(cols, 0, 256, 0, 0, 256, 256)
+    // Create camera
+    val cam = Camera(float3(0.0f, 0.0f, -2.0f), float3(0.0f, 0.0f, -1.0f), SCRWIDTH, SCRHEIGHT)
+
+    // Add sphere
+    val sp0 = Sphere(1.0f, float3(0.0f, 0.0f, 0.0f), 0)
+
+    val cols: IntArray = IntArray(SCRWIDTH*SCRHEIGHT) {1 * it}
+
+    // Trace rays
+    for (i in 0 until SCRWIDTH)
+        for (j in 0 until SCRHEIGHT)
+        {
+            val ray = cam.GeneratePrimaryRay(i.toFloat(), j.toFloat())
+
+            // Intersect sphere
+            sp0.intersect(ray)
+
+            // Check for hit
+            if (ray.t < 1e30f)
+            {
+                ray.objIdx = sp0.id
+                cols[i + j * SCRWIDTH] = 255
+            }
+            else
+                cols[i + j * SCRWIDTH] = 0
+        }
+
+    var bitmap = createBitmap(width=SCRWIDTH, height=SCRHEIGHT, config=Bitmap.Config.RGB_565)
+
+//    bitmap.setPixels(cols, 0, 256, 0, 0, SCRWIDTH, SCRHEIGHT)
+    bitmap.setPixels(cols, 0, SCRWIDTH, 0, 0, SCRWIDTH, SCRHEIGHT)
     val bmap = bitmap.asImageBitmap()
     Image(bitmap = bmap, "yes")
     //image.contentDescription = resources.getString(R.string.my_image_desc)
