@@ -39,7 +39,7 @@ val sp0 = Sphere(1.0f, float3(0.0f, 0.0f, 0.0f), 0)
 val sp1 = Sphere(1.0f, float3(-2.0f, 0.0f, 0.0f), 1)
 val sp2 = Sphere(1.0f, float3(2.0f, 0.0f, 0.0f), 2)
 
-var bmap: ImageBitmap = ImageBitmap(SCRWIDTH, SCRHEIGHT)
+var bitmap: Bitmap = createBitmap(width=SCRWIDTH, height=SCRHEIGHT, config=Bitmap.Config.RGB_565)
 
 var prevTime = Instant.EPOCH.epochSecond.toFloat()
 
@@ -64,56 +64,56 @@ class MainActivity : ComponentActivity() {
             cam.InputHandle(InputType.FWD, (Instant.EPOCH.epochSecond.toFloat() - prevTime))
             prevTime = Instant.EPOCH.epochSecond.toFloat()
             UpdatePixels()
-            newView.setImageBitmap(bmap.asAndroidBitmap())
+            newView.setImageBitmap(bitmap)
         }
         aftBut = findViewById(R.id.aft_but)
         aftBut.setOnClickListener {
             cam.InputHandle(InputType.AFT, (Instant.EPOCH.epochSecond.toFloat() - prevTime))
             prevTime = Instant.EPOCH.epochSecond.toFloat()
             UpdatePixels()
-            newView.setImageBitmap(bmap.asAndroidBitmap())
+            newView.setImageBitmap(bitmap)
         }
         leftBut = findViewById(R.id.left_but)
         leftBut.setOnClickListener {
             cam.InputHandle(InputType.MOVE_LEFT, (Instant.EPOCH.epochSecond.toFloat() - prevTime))
             prevTime = Instant.EPOCH.epochSecond.toFloat()
             UpdatePixels()
-            newView.setImageBitmap(bmap.asAndroidBitmap())
+            newView.setImageBitmap(bitmap)
         }
         rightBut = findViewById(R.id.right_but)
         rightBut.setOnClickListener {
             cam.InputHandle(InputType.MOVE_RIGHT, (Instant.EPOCH.epochSecond.toFloat() - prevTime))
             prevTime = Instant.EPOCH.epochSecond.toFloat()
             UpdatePixels()
-            newView.setImageBitmap(bmap.asAndroidBitmap())
+            newView.setImageBitmap(bitmap)
         }
         upBut = findViewById(R.id.up_but)
         upBut.setOnClickListener {
             cam.InputHandle(InputType.UP, (Instant.EPOCH.epochSecond.toFloat() - prevTime))
             prevTime = Instant.EPOCH.epochSecond.toFloat()
             UpdatePixels()
-            newView.setImageBitmap(bmap.asAndroidBitmap())
+            newView.setImageBitmap(bitmap)
         }
         downBut = findViewById(R.id.down_but)
         downBut.setOnClickListener {
             cam.InputHandle(InputType.DOWN, (Instant.EPOCH.epochSecond.toFloat() - prevTime))
             prevTime = Instant.EPOCH.epochSecond.toFloat()
             UpdatePixels()
-            newView.setImageBitmap(bmap.asAndroidBitmap())
+            newView.setImageBitmap(bitmap)
         }
         rotLeftBut = findViewById(R.id.rot_left_but)
         rotLeftBut.setOnClickListener {
             cam.InputHandle(InputType.ROT_LEFT, (Instant.EPOCH.epochSecond.toFloat() - prevTime))
             prevTime = Instant.EPOCH.epochSecond.toFloat()
             UpdatePixels()
-            newView.setImageBitmap(bmap.asAndroidBitmap())
+            newView.setImageBitmap(bitmap)
         }
         rotRightBut = findViewById(R.id.rot_right_but)
         rotRightBut.setOnClickListener {
             cam.InputHandle(InputType.ROT_RIGHT, (Instant.EPOCH.epochSecond.toFloat() - prevTime))
             prevTime = Instant.EPOCH.epochSecond.toFloat()
             UpdatePixels()
-            newView.setImageBitmap(bmap.asAndroidBitmap())
+            newView.setImageBitmap(bitmap)
         }
 
         // Custom ImageView
@@ -131,7 +131,7 @@ class MainActivity : ComponentActivity() {
         newView.setBackgroundColor(Color.MAGENTA)
 
         UpdatePixels()
-        newView.setImageBitmap(bmap.asAndroidBitmap())
+        newView.setImageBitmap(bitmap)
     }
 }
 
@@ -191,11 +191,8 @@ fun UpdatePixels()
                 cols[i + j * SCRWIDTH] = 0
         }
 
-    var bitmap = createBitmap(width=SCRWIDTH, height=SCRHEIGHT, config=Bitmap.Config.RGB_565)
-
 //    bitmap.setPixels(cols, 0, 256, 0, 0, SCRWIDTH, SCRHEIGHT)
     bitmap.setPixels(cols, 0, SCRWIDTH, 0, 0, SCRWIDTH, SCRHEIGHT)
-    bmap = bitmap.asImageBitmap()
 }
 
 @Composable
