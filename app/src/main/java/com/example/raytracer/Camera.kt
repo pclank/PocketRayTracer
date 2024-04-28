@@ -44,8 +44,10 @@ class Camera(var camPos: float3, var camDir: float3, val SCRWIDTH: Int, val SCRH
 
         camDir = camPos + ahead;
 
-        if (but == InputType.UP) camDir -= up * speed
-        if (but == InputType.DOWN) camDir += up * speed
+//        if (but == InputType.UP) camDir -= up * speed
+//        if (but == InputType.DOWN) camDir += up * speed
+        if (but == InputType.DOWN) camDir -= up * speed
+        if (but == InputType.UP) camDir += up * speed
         if (but == InputType.ROT_LEFT) camDir -= right * speed
         if (but == InputType.ROT_RIGHT) camDir += right * speed
 
