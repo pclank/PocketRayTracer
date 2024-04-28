@@ -1,6 +1,10 @@
 import kotlin.math.sqrt
 
-class Sphere(val radius: Float, val center: float3, val id: Int) {
+enum class MaterialType {
+    DIFFUSE, MIRROR, DIALECTRIC
+}
+
+class Sphere(val radius: Float, val center: float3, val id: Int, val mat: MaterialType = MaterialType.DIFFUSE) {
     fun intersect(ray: Ray)
     {
         val oc = ray.O - center
@@ -29,11 +33,11 @@ class Sphere(val radius: Float, val center: float3, val id: Int) {
         }
     }
 
-    fun getNormal(ray: Ray)
+    fun getNormal(ray: Ray): float3
     {
         val I = ray.IntersectionPoint()
         var norm = I - center
         norm.normalize()
-        insideBacksideCheck(norm, ray.D);
+        return insideBacksideCheck(norm, ray.D)
     }
 }

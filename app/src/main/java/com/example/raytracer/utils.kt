@@ -1,3 +1,7 @@
+import com.example.raytracer.PI
+import com.example.raytracer.float2
+import kotlin.math.acos
+import kotlin.math.atan2
 import kotlin.math.min
 
 fun RandomFloatRange(min: Float, max: Float): Float
@@ -12,6 +16,15 @@ fun insideBacksideCheck(n: float3, rayD: float3): float3
         new_n = -n; // hit backside / inside
 
     return new_n
+}
+
+fun Direction2PolarCoords(D: float3): float2
+{
+    // TODO: Can switch to INVPI!
+    val a = 1 + atan2(D.x, -D.z) / Math.PI
+    val b = acos(D.y) / Math.PI
+//    return (float2)(1 + atan2(D.x, -D.z) / PI, acos(D.y) / PI)
+    return float2(a.toFloat(), b.toFloat())
 }
 
 fun RGB32FtoRGB8(c: float3): Int
