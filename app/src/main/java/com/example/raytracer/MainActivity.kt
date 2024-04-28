@@ -146,6 +146,7 @@ class MainActivity : ComponentActivity() {
 
         // Load HDRI
         hdri_map = BitmapFactory.decodeResource(resources, R.drawable.symmetrical_garden_02_2k1714319279)
+//        hdri_map = BitmapFactory.decodeResource(resources, R.drawable.vignaioli_night_2k1714341932)
 
         // Custom ImageView
         newView = ImageView(this)
@@ -166,7 +167,7 @@ class MainActivity : ComponentActivity() {
 
         // Update performance metric
         val curTime = System.currentTimeMillis()
-        perfText.text = ((curTime - prevTime) * 1000).toString()
+        perfText.text = (curTime - prevTime).toString()+"ms"
         prevTime = curTime
     }
 }
@@ -291,10 +292,10 @@ fun TraceRay(ray: Ray, depth: Int): Int
     // Exited scene
     else
     {
-//        return Color.BLUE
         // Sample HDRI
         val pixel_coords: float2 = Direction2PolarCoords(ray.D)
-        val sample = hdri_map[(pixel_coords.x * (1024 - 1)).toInt(), (pixel_coords.y * (2048 - 1)).toInt()]
+//        val sample = hdri_map[(pixel_coords.x * (1024 - 1)).toInt(), (pixel_coords.y * (2048 - 1)).toInt()]
+        val sample = hdri_map[(pixel_coords.x * (hdri_map.height - 1)).toInt(), (pixel_coords.y * (hdri_map.height - 1)).toInt()]
 //        val sample = hdri_map[pixel_coords.x.toInt(), pixel_coords.y.toInt()]
         return sample
     }
