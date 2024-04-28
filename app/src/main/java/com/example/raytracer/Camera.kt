@@ -25,7 +25,7 @@ class Camera(var camPos: float3, var camDir: float3, val SCRWIDTH: Int, val SCRH
         return Ray(camPos, p_c)
     }
 
-    fun InputHandle(but: InputType, t: Float)
+    fun InputHandle(but: InputType, t: Long)
     {
 //        val speed = 0.0025f * t
         val speed = 0.2f

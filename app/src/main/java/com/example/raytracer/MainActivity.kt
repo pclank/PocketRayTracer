@@ -2,6 +2,7 @@ package com.example.raytracer
 
 import Direction2PolarCoords
 import MaterialType
+import RGB32FtoRGB8
 import Ray
 import Sphere
 import android.graphics.Bitmap
@@ -17,6 +18,7 @@ import android.os.Bundle
 import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.ImageView
+import android.widget.TextView
 import androidx.activity.ComponentActivity
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,6 +30,7 @@ import com.example.raytracer.ui.theme.RayTracerTheme
 import float3
 import reflect
 import java.time.Instant
+import kotlin.math.sqrt
 
 
 // Constants
@@ -51,11 +54,18 @@ val cam = Camera(float3(0.0f, 0.0f, -5.0f), float3(0.0f, 0.0f, -1.0f), SCRWIDTH,
 val sp0 = Sphere(1.0f, float3(0.0f, 0.0f, 0.0f), 0, MaterialType.MIRROR)
 val sp1 = Sphere(1.0f, float3(-2.50f, 0.0f, 0.0f), 1)
 val sp2 = Sphere(1.0f, float3(2.5f, 0.0f, 0.0f), 2)
-//val sp3 = Sphere(40.0f, float3(0.0f, -7.0f, 0.0f), 3)
+val sp3 = Sphere(200.0f, float3(0.0f, -15.0f, 0.0f), 3)
+
+//val prims = arrayOf(sp0, sp1, sp2)
+val prims = arrayOf(sp0, sp1, sp2, sp3)
+
+// Add Point-light
+val l_color = float3(1.0f, 1.0f, 1.0f) * 100.0f
+val p_light = PointLight(float3(0.0f, 3.0f, -2.0f), l_color)
 
 var bitmap: Bitmap = createBitmap(width=SCRWIDTH, height=SCRHEIGHT, config=Bitmap.Config.RGB_565)
 var hdri_map = createBitmap(2048, 1024)
-var prevTime = Instant.EPOCH.epochSecond.toFloat()
+var prevTime = System.currentTimeMillis()
 
 class MainActivity : ComponentActivity() {
 
@@ -68,6 +78,7 @@ class MainActivity : ComponentActivity() {
     lateinit var downBut: Button
     lateinit var rotLeftBut: Button
     lateinit var rotRightBut: Button
+    lateinit var perfText: TextView
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.main)
@@ -75,60 +86,63 @@ class MainActivity : ComponentActivity() {
         // Set up buttons
         fwdBut = findViewById(R.id.fwd_but)
         fwdBut.setOnClickListener {
-            cam.InputHandle(InputType.FWD, (Instant.EPOCH.epochSecond.toFloat() - prevTime))
-            prevTime = Instant.EPOCH.epochSecond.toFloat()
+            cam.InputHandle(InputType.FWD, (System.currentTimeMillis() - prevTime))
+            prevTime = System.currentTimeMillis()
             UpdatePixels()
+            UpdateMetric(perfText, prevTime)
             newView.setImageBitmap(bitmap)
         }
         aftBut = findViewById(R.id.aft_but)
         aftBut.setOnClickListener {
-            cam.InputHandle(InputType.AFT, (Instant.EPOCH.epochSecond.toFloat() - prevTime))
-            prevTime = Instant.EPOCH.epochSecond.toFloat()
+            cam.InputHandle(InputType.AFT, (System.currentTimeMillis() - prevTime))
+            prevTime = System.currentTimeMillis()
             UpdatePixels()
             newView.setImageBitmap(bitmap)
         }
         leftBut = findViewById(R.id.left_but)
         leftBut.setOnClickListener {
-            cam.InputHandle(InputType.MOVE_LEFT, (Instant.EPOCH.epochSecond.toFloat() - prevTime))
-            prevTime = Instant.EPOCH.epochSecond.toFloat()
+            cam.InputHandle(InputType.MOVE_LEFT, (System.currentTimeMillis() - prevTime))
+            prevTime = System.currentTimeMillis()
             UpdatePixels()
             newView.setImageBitmap(bitmap)
         }
         rightBut = findViewById(R.id.right_but)
         rightBut.setOnClickListener {
-            cam.InputHandle(InputType.MOVE_RIGHT, (Instant.EPOCH.epochSecond.toFloat() - prevTime))
-            prevTime = Instant.EPOCH.epochSecond.toFloat()
+            cam.InputHandle(InputType.MOVE_RIGHT, (System.currentTimeMillis() - prevTime))
+            prevTime = System.currentTimeMillis()
             UpdatePixels()
             newView.setImageBitmap(bitmap)
         }
         upBut = findViewById(R.id.up_but)
         upBut.setOnClickListener {
-            cam.InputHandle(InputType.UP, (Instant.EPOCH.epochSecond.toFloat() - prevTime))
-            prevTime = Instant.EPOCH.epochSecond.toFloat()
+            cam.InputHandle(InputType.UP, (System.currentTimeMillis() - prevTime))
+            prevTime = System.currentTimeMillis()
             UpdatePixels()
             newView.setImageBitmap(bitmap)
         }
         downBut = findViewById(R.id.down_but)
         downBut.setOnClickListener {
-            cam.InputHandle(InputType.DOWN, (Instant.EPOCH.epochSecond.toFloat() - prevTime))
-            prevTime = Instant.EPOCH.epochSecond.toFloat()
+            cam.InputHandle(InputType.DOWN, (System.currentTimeMillis() - prevTime))
+            prevTime = System.currentTimeMillis()
             UpdatePixels()
             newView.setImageBitmap(bitmap)
         }
         rotLeftBut = findViewById(R.id.rot_left_but)
         rotLeftBut.setOnClickListener {
-            cam.InputHandle(InputType.ROT_LEFT, (Instant.EPOCH.epochSecond.toFloat() - prevTime))
-            prevTime = Instant.EPOCH.epochSecond.toFloat()
+            cam.InputHandle(InputType.ROT_LEFT, (System.currentTimeMillis() - prevTime))
+            prevTime = System.currentTimeMillis()
             UpdatePixels()
             newView.setImageBitmap(bitmap)
         }
         rotRightBut = findViewById(R.id.rot_right_but)
         rotRightBut.setOnClickListener {
-            cam.InputHandle(InputType.ROT_RIGHT, (Instant.EPOCH.epochSecond.toFloat() - prevTime))
-            prevTime = Instant.EPOCH.epochSecond.toFloat()
+            cam.InputHandle(InputType.ROT_RIGHT, (System.currentTimeMillis() - prevTime))
+            prevTime = System.currentTimeMillis()
             UpdatePixels()
             newView.setImageBitmap(bitmap)
         }
+
+        perfText = findViewById(R.id.perf_text)
 
         // Load HDRI
         hdri_map = BitmapFactory.decodeResource(resources, R.drawable.symmetrical_garden_02_2k1714319279)
@@ -149,7 +163,20 @@ class MainActivity : ComponentActivity() {
 
         UpdatePixels()
         newView.setImageBitmap(bitmap)
+
+        // Update performance metric
+        val curTime = System.currentTimeMillis()
+        perfText.text = ((curTime - prevTime) * 1000).toString()
+        prevTime = curTime
     }
+}
+
+fun UpdateMetric(perfText: TextView, startTime: Long)
+{
+    // Update performance metric
+    val curTime = System.currentTimeMillis()
+    val delta = (curTime - startTime)
+    perfText.text = delta.toString()+"ms"
 }
 
 class MyDrawable : Drawable() {
@@ -178,13 +205,54 @@ class MyDrawable : Drawable() {
         PixelFormat.OPAQUE
 }
 
+fun DirectIllumination(ray: Ray, surfaceColor: float3): Int
+{
+    val I = ray.IntersectionPoint()
+    val N = prims[ray.objIdx].getNormal(ray)
+    val L = p_light.pos - I
+
+    val dist = L.length()
+    L.normalize()
+
+    // Light normal should point downwards
+    val lightNormal = float3(0.0f, -1.0f, 0.0f)
+
+    val cos_o = lightNormal.dot(-L)
+    val cos_i = L.dot(N);
+
+    if (cos_o > 0.0f && cos_i > 0.0f)
+    {
+        // Set up shadow ray
+        var shadow_ray = Ray(I + L * EPSILON, L)
+        shadow_ray.t = dist - 2.0f * EPSILON
+
+        // TODO: Add proper occlusion check!
+        sp0.intersect(shadow_ray)
+        sp1.intersect(shadow_ray)
+        sp2.intersect(shadow_ray)
+        sp3.intersect(shadow_ray)
+        if (shadow_ray.objIdx != -1)
+            return Color.BLACK
+
+        // BRDF calculation
+        var BRDF = float3(INVPI, INVPI, INVPI)
+        BRDF *= surfaceColor
+        // TODO: Improve solid angle!
+        val solidAngle = cos_o / (dist * dist)       // Pretend this is right
+        val color = BRDF * p_light.color * solidAngle * cos_i
+        return RGB32FtoRGB8(color)
+    }
+
+    return Color.BLACK
+}
+
 fun TraceRay(ray: Ray, depth: Int): Int
 {
     // Intersect spheres
     sp0.intersect(ray)
     sp1.intersect(ray)
     sp2.intersect(ray)
-//    sp3.intersect(ray)
+    sp3.intersect(ray)
 
     if (depth < 0)
         return Color.BLACK
@@ -205,12 +273,18 @@ fun TraceRay(ray: Ray, depth: Int): Int
             else
                 return Color.RED
         }
+//        else if (ray.objIdx == 1)
+//            return Color.GREEN
+//        else if (ray.objIdx == 2)
+//            return Color.YELLOW
+//        else if (ray.objIdx == 3)
+//            return Color.WHITE
         else if (ray.objIdx == 1)
-            return Color.GREEN
+            return DirectIllumination(ray, float3(0.0f, 1.0f, 0.0f))
         else if (ray.objIdx == 2)
-            return Color.YELLOW
+            return DirectIllumination(ray, float3(1.0f, 1.0f, 0.8f))
         else if (ray.objIdx == 3)
-            return Color.WHITE
+            return DirectIllumination(ray, float3(1.0f, 1.0f, 1.0f))
         else
             return Color.BLACK
     }
