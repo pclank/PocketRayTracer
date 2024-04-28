@@ -16,12 +16,24 @@ class Sphere(val radius: Float, val center: float3, val id: Int) {
         if (hit)
         {
             ray.t = t
+            ray.objIdx = id
             return
         }
         if (c > 0) return; // we're outside; safe to skip option 2
         t = d - b
         hit = t < ray.t && t > 0
         if (hit)
+        {
             ray.t = t
+            ray.objIdx = id
+        }
+    }
+
+    fun getNormal(ray: Ray)
+    {
+        val I = ray.IntersectionPoint()
+        var norm = I - center
+        norm.normalize()
+        insideBacksideCheck(norm, ray.D);
     }
 }

@@ -27,7 +27,8 @@ class Camera(var camPos: float3, var camDir: float3, val SCRWIDTH: Int, val SCRH
 
     fun InputHandle(but: InputType, t: Float)
     {
-        val speed = 0.0025f * t
+//        val speed = 0.0025f * t
+        val speed = 0.2f
         var ahead = camDir - camPos
         ahead.normalize()
         var tmpUp = float3(0.0f, 1.0f, 0.0f);
