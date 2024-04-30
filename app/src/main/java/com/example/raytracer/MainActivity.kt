@@ -32,6 +32,7 @@ import androidx.core.math.MathUtils.clamp
 import com.example.raytracer.ui.theme.RayTracerTheme
 import float3
 import reflect
+import java.lang.Math.pow
 import java.time.Instant
 import kotlin.math.sqrt
 
@@ -41,7 +42,7 @@ import kotlin.math.sqrt
 //    val SCRHEIGHT = 256
 val SCRWIDTH = 512
 val SCRHEIGHT = 512
-val MAX_DEPTH = 2
+val MAX_DEPTH = 4
 val AIR = 1.000293f
 
 val PI = 3.14159265358979323846264f
@@ -296,20 +297,37 @@ fun TraceRay(ray: Ray, depth: Int): Int
                 val R = Fresnel(ray.D, sp1.getNormal(ray), n1, n2, cosI, 0.1f)
 
                 // TODO: Perhaps randomly!
-                if (R < 1.0f)
+//                if (R < 1.0f)
+//                if (R < Math.random().toFloat())
+                if (true)
                 {
                     val rD = RefractRay(ray.D, sp1.getNormal(ray), n1, n2, cosI)
                     val rO = ray.IntersectionPoint() + rD * EPSILON
 
                     val refract_ray = Ray(rO, rD)
-                    refract_ray.inside = !ray.inside
+//                    refract_ray.inside = !ray.inside
 
+                    if (!ray.inside)
+                        refract_ray.inside = true
+
+                    var beer = 255.0f
+                    //  Calculate absorption with beers law
+                    if (ray.inside)
+                    {
+                        // TODO: Add proper Absorption!
+                        /*beer.x = pow(E, -prim.absorbX * prevRay.t);
+                        beer.y = pow(E, -prim.absorbY * prevRay.t);
+                        beer.z = pow(E, -prim.absorbZ * prevRay.t);*/
+                        beer = pow(E.toDouble(), (-0.5f * ray.t).toDouble()).toFloat()
+                    }
+
+//                    return TraceRay(refract_ray, depth - 1) + RGB32FtoRGB8(float3(beer, beer, beer))
                     return TraceRay(refract_ray, depth - 1)
                 }
                 else
                 {
                     var I = ray.IntersectionPoint()
-                    val dir = reflect(ray.D, sp0.getNormal(ray))
+                    val dir = reflect(ray.D, sp1.getNormal(ray))
                     var reflect_ray = Ray(I + dir * EPSILON, dir)
 
                     return TraceRay(reflect_ray, depth - 1)
