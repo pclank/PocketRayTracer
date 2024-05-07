@@ -57,13 +57,13 @@ val cam = Camera(float3(0.0f, 0.0f, -5.0f), float3(0.0f, 0.0f, -1.0f), SCRWIDTH,
 
 // Add spheres
 val sp0 = Sphere(1.0f, float3(0.0f, 0.0f, 0.0f), 0, MaterialType.MIRROR)
-//val sp1 = Sphere(1.0f, float3(-2.50f, 0.0f, 0.0f), 1)
-val sp1 = Sphere(1.0f, float3(-2.50f, 0.0f, 0.0f), 1, MaterialType.DIALECTRIC)
+val sp1 = Sphere(1.0f, float3(-2.50f, 0.0f, 0.0f), 1)
+//val sp1 = Sphere(1.0f, float3(-2.50f, 0.0f, 0.0f), 1, MaterialType.DIALECTRIC)
 val sp2 = Sphere(1.0f, float3(2.5f, 0.0f, 0.0f), 2)
 val sp3 = Sphere(200.0f, float3(0.0f, -15.0f, 0.0f), 3)
+val sp4 = Sphere(1.0f, float3(-2.5f, 0.0f, -2.0f), 4, MaterialType.DIALECTRIC)
 
-//val prims = arrayOf(sp0, sp1, sp2)
-val prims = arrayOf(sp0, sp1, sp2, sp3)
+val prims = arrayOf(sp0, sp1, sp2, sp3, sp4)
 
 // Add Point-light
 val l_color = float3(1.0f, 1.0f, 1.0f) * 100.0f
@@ -232,12 +232,22 @@ fun DirectIllumination(ray: Ray, surfaceColor: float3): Int
         // Set up shadow ray
         var shadow_ray = Ray(I + L * EPSILON, L)
         shadow_ray.t = dist - 2.0f * EPSILON
+        val init_dist = shadow_ray.t
 
         // TODO: Add proper occlusion check!
         sp0.intersect(shadow_ray)
+        if (shadow_ray.t < init_dist)
+            return Color.BLACK
         sp1.intersect(shadow_ray)
+        if (shadow_ray.t < init_dist)
+            return Color.BLACK
         sp2.intersect(shadow_ray)
+        if (shadow_ray.t < init_dist)
+            return Color.BLACK
         sp3.intersect(shadow_ray)
+        if (shadow_ray.t < init_dist)
+            return Color.BLACK
+        sp4.intersect(shadow_ray)
         if (shadow_ray.objIdx != -1)
             return Color.BLACK
 
@@ -260,6 +270,7 @@ fun TraceRay(ray: Ray, depth: Int): Int
     sp1.intersect(ray)
     sp2.intersect(ray)
     sp3.intersect(ray)
+    sp4.intersect(ray)
 
     if (depth < 0)
         return Color.BLACK
@@ -339,6 +350,61 @@ fun TraceRay(ray: Ray, depth: Int): Int
             return DirectIllumination(ray, float3(1.0f, 1.0f, 0.8f))
         else if (ray.objIdx == 3)
             return DirectIllumination(ray, float3(1.0f, 1.0f, 1.0f))
+        else if (ray.objIdx == 4)
+            if (sp4.mat == MaterialType.DIALECTRIC)
+            {
+                val cosI = clamp(ray.D.dot(sp4.getNormal(ray)), -1.0f, 1.0f)
+                var n1 = AIR;
+                var n2 = 1.03f;
+
+                if (ray.inside)
+                {
+                    val temp = n1
+                    n1 = n2
+                    n2 = temp
+                }
+
+                val R = Fresnel(ray.D, sp4.getNormal(ray), n1, n2, cosI, 0.1f)
+
+                // TODO: Perhaps randomly!
+//                if (R < 1.0f)
+//                if (R < Math.random().toFloat())
+                if (true)
+                {
+                    val rD = RefractRay(ray.D, sp4.getNormal(ray), n1, n2, cosI)
+                    val rO = ray.IntersectionPoint() + rD * EPSILON
+
+                    val refract_ray = Ray(rO, rD)
+//                    refract_ray.inside = !ray.inside
+
+                    if (!ray.inside)
+                        refract_ray.inside = true
+
+                    var beer = 255.0f
+                    //  Calculate absorption with beers law
+                    if (ray.inside)
+                    {
+                        // TODO: Add proper Absorption!
+                        /*beer.x = pow(E, -prim.absorbX * prevRay.t);
+                        beer.y = pow(E, -prim.absorbY * prevRay.t);
+                        beer.z = pow(E, -prim.absorbZ * prevRay.t);*/
+                        beer = pow(E.toDouble(), (-0.5f * ray.t).toDouble()).toFloat()
+                    }
+
+//                    return TraceRay(refract_ray, depth - 1) + RGB32FtoRGB8(float3(beer, beer, beer))
+                    return TraceRay(refract_ray, depth - 1)
+                }
+                else
+                {
+                    var I = ray.IntersectionPoint()
+                    val dir = reflect(ray.D, sp4.getNormal(ray))
+                    var reflect_ray = Ray(I + dir * EPSILON, dir)
+
+                    return TraceRay(reflect_ray, depth - 1)
+                }
+            }
+            else
+                return DirectIllumination(ray, float3(0.0f, 1.0f, 0.0f))
         else
             return Color.BLACK
     }
