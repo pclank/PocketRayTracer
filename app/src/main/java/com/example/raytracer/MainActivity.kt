@@ -278,11 +278,10 @@ fun DirectIllumination(ray: Ray, surfaceColor: float3): Int
 fun TraceRay(ray: Ray, depth: Int): Int
 {
     // Intersect spheres
-    sp0.intersect(ray)
-    sp1.intersect(ray)
-    sp2.intersect(ray)
-    sp3.intersect(ray)
-    sp4.intersect(ray)
+    for (i in prims.indices)
+    {
+        prims[i].intersect(ray)
+    }
 
     if (depth < 0)
         return Color.BLACK
@@ -469,6 +468,68 @@ fun IntersectAABB(ray: Ray, bmin: float3, bmax: float3): Float
     tmax = min(tmax, max(tz1, tz2))
 
     return if (tmax >= tmin && tmin < ray.t && tmax > 0) tmin else 1e30f
+}
+
+fun IntersectBVH(ray: Ray, nodeIdx: UInt)
+{
+    var node = bvh[nodeIdx.toInt()].copy()
+
+    var node_stack: MutableList<BVHNode> = MutableList(64) { emptyNode.copy() }
+
+    var stack_ptr = 0
+
+    while (true) {
+        if (node.triCount > 0u)
+        {
+            for (i in 0 until node.triCount.toInt())
+            {
+                var prev_t = ray.t
+                prims[triIdx[node.leftFirst.toInt() + i].toInt()].intersect(ray)
+                if (prev_t > ray.t)
+                {
+                    ray.objIdx = triIdx[node.leftFirst.toInt() + i].toInt()
+                    prev_t = ray.t
+                }
+            }
+
+            if (stack_ptr == 0)
+                break
+            else
+                node = node_stack[--stack_ptr].copy()
+
+            continue
+        }
+
+        // Children
+        var child1 = bvh[node.leftFirst.toInt()].copy()
+        var child2 = bvh[node.leftFirst.toInt() + 1].copy()
+
+        var dist1 = IntersectAABB(ray, child1.aabbMin, child1.aabbMax)
+        var dist2 = IntersectAABB(ray, child2.aabbMin, child2.aabbMax)
+
+        if (dist1 > dist2)
+        {
+            val tmp = dist1
+            dist1 = dist2
+            dist2 = tmp
+
+            child1 = bvh[node.leftFirst.toInt() + 1].copy()
+            child2 = bvh[node.leftFirst.toInt()].copy()
+        }
+        if (dist1 == 1e30f)
+        {
+            if (stack_ptr == 0)
+                break;
+            else
+                node = node_stack[--stack_ptr];
+        }
+        else
+        {
+            node = child1;
+            if (dist2 != 1e30f)
+                node_stack[stack_ptr++] = child2;
+        }
+    }
 }
 
 fun UpdateNodeBounds(nodeIdx: UInt)
