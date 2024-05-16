@@ -45,7 +45,7 @@ import kotlin.math.sqrt
 //    val SCRHEIGHT = 256
 val SCRWIDTH = 512
 val SCRHEIGHT = 512
-val MAX_DEPTH = 4
+val MAX_DEPTH = 5
 val AIR = 1.000293f
 
 val PI = 3.14159265358979323846264f
@@ -247,19 +247,13 @@ fun DirectIllumination(ray: Ray, surfaceColor: float3): Int
         val init_dist = shadow_ray.t
 
         // TODO: Add proper occlusion check!
-//        for (i in prims.indices)
-//        {
-//            prims[i].intersect(shadow_ray)
-//            if (shadow_ray.t < init_dist)
-//                return Color.BLACK
-//        }
         IntersectBVH(shadow_ray, 0u)
 
-        if (shadow_ray.objIdx != -1)
+        if (shadow_ray.objIdx != -1 && prims[shadow_ray.objIdx].mat != MaterialType.DIALECTRIC)
             return Color.BLACK
 
         // BRDF calculation
-        var BRDF = float3(INVPI, INVPI, INVPI)
+        var BRDF = float3(INVPI)
         BRDF *= surfaceColor
         // TODO: Improve solid angle!
         val solidAngle = cos_o / (dist * dist)       // Pretend this is right
@@ -315,9 +309,9 @@ fun TraceRay(ray: Ray, depth: Int): Int
                 val R = Fresnel(ray.D, sp1.getNormal(ray), n1, n2, cosI, 0.1f)
 
                 // TODO: Perhaps randomly!
-//                if (R < 1.0f)
-//                if (R < Math.random().toFloat())
-                if (true)
+                if (R < 1.0f)
+//                if (R <s Math.random().toFloat())
+//                if (true)
                 {
                     val rD = RefractRay(ray.D, sp1.getNormal(ray), n1, n2, cosI)
                     val rO = ray.IntersectionPoint() + rD * EPSILON
@@ -372,11 +366,12 @@ fun TraceRay(ray: Ray, depth: Int): Int
                 }
 
                 val R = Fresnel(ray.D, sp4.getNormal(ray), n1, n2, cosI, 0.1f)
+//                val R = Fresnel(ray.D, sp4.getNormal(ray), n1, n2, cosI, 0.9f)
 
                 // TODO: Perhaps randomly!
-//                if (R < 1.0f)
+                if (R < 1.0f)
 //                if (R < Math.random().toFloat())
-                if (true)
+//                if (true)
                 {
                     val rD = RefractRay(ray.D, sp4.getNormal(ray), n1, n2, cosI)
                     val rO = ray.IntersectionPoint() + rD * EPSILON
