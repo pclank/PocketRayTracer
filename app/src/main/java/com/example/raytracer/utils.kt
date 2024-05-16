@@ -12,6 +12,26 @@ fun RandomFloatRange(min: Float, max: Float): Float
     return min + (max - min) * Math.random().toFloat()
 }
 
+// AABB adjustment functions
+fun fminf(a: Float, b: Float): Float
+{
+    return if (a < b) a else b              // no ternary in kotlin
+}
+
+fun fmaxf(a: Float, b: Float): Float
+{
+    return if (a > b) a else b
+}
+fun fminf(a: float3, b: float3): float3
+{
+    return float3(fminf(a.x, b.x), fminf(a.y, b.y), fminf(a.z, b.z))
+}
+
+fun fmaxf(a: float3, b: float3): float3
+{
+    return float3(fmaxf(a.x, b.x), fmaxf(a.y, b.y), fmaxf(a.z, b.z))
+}
+
 fun insideBacksideCheck(n: float3, rayD: float3): float3
 {
     var new_n = n
@@ -44,9 +64,9 @@ fun Fresnel(I: float3, N: float3, n1: Float, n2: Float, cosI: Float, reflectivit
     val abs_cosI = abs(cosI)
 
     val n2CosI = n2 * abs_cosI
-    val n1CosT = n1 * abs_cosI
+    val n1CosT = n1 * cosT
     val sPolar = (n2CosI - n1CosT) / (n2CosI + n1CosT)
-    val n1CosI = n1 * cosI
+    val n1CosI = n1 * abs_cosI
     val n2CosT = n2 * cosT
     val pPolar = (n1CosI - n2CosT) / (n1CosI + n2CosT)
     val Fr = (sPolar * sPolar + pPolar * pPolar) / 2.0f
