@@ -247,19 +247,13 @@ fun DirectIllumination(ray: Ray, surfaceColor: float3): Int
         val init_dist = shadow_ray.t
 
         // TODO: Add proper occlusion check!
-        sp0.intersect(shadow_ray)
-        if (shadow_ray.t < init_dist)
-            return Color.BLACK
-        sp1.intersect(shadow_ray)
-        if (shadow_ray.t < init_dist)
-            return Color.BLACK
-        sp2.intersect(shadow_ray)
-        if (shadow_ray.t < init_dist)
-            return Color.BLACK
-        sp3.intersect(shadow_ray)
-        if (shadow_ray.t < init_dist)
-            return Color.BLACK
-        sp4.intersect(shadow_ray)
+        for (i in prims.indices)
+        {
+            prims[i].intersect(shadow_ray)
+            if (shadow_ray.t < init_dist)
+                return Color.BLACK
+        }
+
         if (shadow_ray.objIdx != -1)
             return Color.BLACK
 
@@ -279,9 +273,7 @@ fun TraceRay(ray: Ray, depth: Int): Int
 {
     // Intersect spheres
     for (i in prims.indices)
-    {
         prims[i].intersect(ray)
-    }
 
     if (depth < 0)
         return Color.BLACK
