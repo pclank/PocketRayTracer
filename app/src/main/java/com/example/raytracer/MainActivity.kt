@@ -12,7 +12,6 @@ import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.ColorFilter
-import android.graphics.ImageDecoder
 import android.graphics.Paint
 import android.graphics.PixelFormat
 import android.graphics.drawable.Drawable
@@ -31,9 +30,13 @@ import androidx.core.graphics.get
 import androidx.core.math.MathUtils.clamp
 import com.example.raytracer.ui.theme.RayTracerTheme
 import float3
+import fmaxf
+import fminf
 import reflect
+import java.lang.Float.max
+import java.lang.Float.min
 import java.lang.Math.pow
-import java.time.Instant
+import java.util.Collections.swap
 import kotlin.math.sqrt
 
 
@@ -72,6 +75,13 @@ val p_light = PointLight(float3(0.0f, 3.0f, -2.0f), l_color)
 var bitmap: Bitmap = createBitmap(width=SCRWIDTH, height=SCRHEIGHT, config=Bitmap.Config.RGB_565)
 var hdri_map = createBitmap(2048, 1024)
 var prevTime = System.currentTimeMillis()
+
+// BVH Stuff
+const val rootNodeIdx = 0
+var nodesUsed = 1
+lateinit var bvh: MutableList<BVHNode>
+lateinit var triIdx: MutableList<UInt>
+val emptyNode: BVHNode = BVHNode(float3(0.0f), float3(0.0f), 0u, 0u)
 
 class MainActivity : ComponentActivity() {
 
@@ -167,6 +177,8 @@ class MainActivity : ComponentActivity() {
         newView.x = 20.0f
         newView.y = 500f
         newView.setBackgroundColor(Color.MAGENTA)
+
+        BuildBVH()
 
         UpdatePixels()
         newView.setImageBitmap(bitmap)
@@ -436,6 +448,131 @@ fun UpdatePixels()
 
 //    bitmap.setPixels(cols, 0, 256, 0, 0, SCRWIDTH, SCRHEIGHT)
     bitmap.setPixels(cols, 0, SCRWIDTH, 0, 0, SCRWIDTH, SCRHEIGHT)
+}
+
+// **********************************************************************************************
+// BVH Functions
+// **********************************************************************************************
+fun IntersectAABB(ray: Ray, bmin: float3, bmax: float3): Float
+{
+    val tx1 = (bmin.x - ray.O.x) / ray.D.x
+    val tx2 = (bmax.x - ray.O.x) / ray.D.x
+    var tmin: Float = min(tx1, tx2)
+    var tmax: Float = max(tx1, tx2)
+    val ty1 = (bmin.y - ray.O.y) / ray.D.y
+    val ty2 = (bmax.y - ray.O.y) / ray.D.y
+    tmin = max(tmin, min(ty1, ty2))
+    tmax = min(tmax, max(ty1, ty2))
+    val tz1 = (bmin.z - ray.O.z) / ray.D.z
+    val tz2 = (bmax.z - ray.O.z) / ray.D.z
+    tmin = max(tmin, min(tz1, tz2))
+    tmax = min(tmax, max(tz1, tz2))
+
+    return if (tmax >= tmin && tmin < ray.t && tmax > 0) tmin else 1e30f
+}
+
+fun UpdateNodeBounds(nodeIdx: UInt)
+{
+    var updatedNode: BVHNode = bvh[nodeIdx.toInt()]
+    updatedNode.aabbMin = float3(1e30f, 1e30f, 1e30f)
+    updatedNode.aabbMax = float3(-1e30f, -1e30f, -1e30f)
+
+    val first = updatedNode.leftFirst
+    for (i in 0 until updatedNode.triCount.toInt())
+    {
+        val leafTriIdx = triIdx[first.toInt() + i]
+
+        var leafPrim = prims[leafTriIdx.toInt()]
+
+        val s_aabb_min: float3 = leafPrim.center - float3(sqrt(leafPrim.radius))
+        val s_aabb_max: float3 = leafPrim.center + float3(sqrt(leafPrim.radius))
+
+        // Adjust
+        updatedNode.aabbMin = fminf(updatedNode.aabbMin, s_aabb_min)
+        updatedNode.aabbMax = fmaxf(updatedNode.aabbMax, s_aabb_max)
+    }
+
+    // TODO: This may not be needed, as Kotlin probably uses pass-by-reference for objects!
+    bvh[nodeIdx.toInt()] = updatedNode
+}
+
+fun Subdivide(nodeIdx: UInt)
+{
+    // TODO: Implement SAH for giggles!
+
+    // terminate recursion
+    val node = bvh[nodeIdx.toInt()]
+    if (node.triCount <= 2u) return
+    // determine split axis and position
+    val extent: float3 = node.aabbMax - node.aabbMin
+
+    // Mid-point split
+    var axis = 0
+    if (extent.y > extent.x)
+    {axis = 1}
+    if (extent.z > extent[axis])
+    {axis = 2}
+    val splitPos: Float = node.aabbMin[axis] + extent[axis] * 0.5f
+
+    // in-place partition
+    var i = node.leftFirst.toInt()
+    var j: Int = i + node.triCount.toInt() - 1
+    while (i <= j)
+    {
+        if (prims[triIdx[i].toInt()].center[axis] < splitPos)
+            i++
+        else
+            swap(triIdx, i, j--)
+//            swap(triIdx, triIdx[i].toInt(), triIdx[j--].toInt())
+    }
+
+    // abort split if one of the sides is empty
+    val leftCount: Int = i - node.leftFirst.toInt()
+    if (leftCount == 0 || leftCount == node.triCount.toInt()) return
+
+    val b = (8).toUInt()
+
+    // create child nodes
+    val leftChildIdx = nodesUsed++
+    val rightChildIdx = nodesUsed++
+    bvh[leftChildIdx].leftFirst = node.leftFirst
+    bvh[leftChildIdx].triCount = leftCount.toUInt()
+    bvh[rightChildIdx].leftFirst = i.toUInt()
+    bvh[rightChildIdx].triCount = node.triCount - leftCount.toUInt()
+    node.leftFirst = leftChildIdx.toUInt()
+    node.triCount = 0u
+
+    UpdateNodeBounds(leftChildIdx.toUInt())
+    UpdateNodeBounds(rightChildIdx.toUInt())
+
+    // Recurse
+    Subdivide(leftChildIdx.toUInt())
+    Subdivide(rightChildIdx.toUInt())
+}
+
+fun BuildBVH(): Boolean
+{
+    // Resize lists
+    bvh = MutableList(prims.size * 2 - 1) { emptyNode.copy() }
+    triIdx = MutableList(prims.size) {0u}
+
+    // populate index array
+    for (i in prims.indices)
+    {
+        triIdx[i] = i.toUInt()
+    }
+
+    // Assign all prims to root
+    bvh[rootNodeIdx].leftFirst = 0u
+    bvh[rootNodeIdx].triCount = prims.size.toUInt()
+
+    // Update root node
+    UpdateNodeBounds(rootNodeIdx.toUInt())
+
+    // Subdivide recursively
+    Subdivide(rootNodeIdx.toUInt())
+
+    return true
 }
 
 @Composable

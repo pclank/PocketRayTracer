@@ -1,6 +1,7 @@
 import kotlin.math.sqrt
 
 class float3(var x: Float, var y: Float, var z: Float) {
+    constructor(x: Float) : this(x, x, x)
 
     // Operators
     operator fun unaryMinus(): float3 {return float3(-x, -y, -z)}
@@ -28,6 +29,16 @@ class float3(var x: Float, var y: Float, var z: Float) {
     operator fun times(b: Float): float3 {return float3(x * b, y * b, z * b)}
     operator fun Float.times(b: float3): float3 {return b * this}
     operator fun float3.div(b: Float): float3 {return (1 / b) * this}
+
+    operator fun get(i: Int): Float
+    {
+        return when (i) {
+            0 -> x
+            1 -> y
+            2 -> z
+            else -> error("Invalid axis request!")
+        }
+    }
 
     // Related functions
     fun squaredLength(): Float {return x * x + y * y + z * z}

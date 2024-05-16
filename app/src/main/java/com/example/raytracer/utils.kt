@@ -12,6 +12,26 @@ fun RandomFloatRange(min: Float, max: Float): Float
     return min + (max - min) * Math.random().toFloat()
 }
 
+// AABB adjustment functions
+fun fminf(a: Float, b: Float): Float
+{
+    return if (a < b) a else b              // no ternary in kotlin
+}
+
+fun fmaxf(a: Float, b: Float): Float
+{
+    return if (a > b) a else b
+}
+fun fminf(a: float3, b: float3): float3
+{
+    return float3(fminf(a.x, b.x), fminf(a.y, b.y), fminf(a.z, b.z))
+}
+
+fun fmaxf(a: float3, b: float3): float3
+{
+    return float3(fmaxf(a.x, b.x), fmaxf(a.y, b.y), fmaxf(a.z, b.z))
+}
+
 fun insideBacksideCheck(n: float3, rayD: float3): float3
 {
     var new_n = n
